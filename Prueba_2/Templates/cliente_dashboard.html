@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard de Montos por Servicio</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 10px; border: 1px solid #ccc; text-align: center; }
+        th { background-color: #4CAF50; color: white; }
+        .center { text-align: center; }
+        .chart-container { width: 45%; display: inline-block; vertical-align: top; }
+        .full-chart { width: 90%; margin: 20px auto; }
+    </style>
+</head>
+<body>
+    <div class="center">
+        
+    <h2>Dashboard de Montos por Servicio</h2>
+    <form action="/" method="get" style="position:absolute; top: 20px; right: 20px;">
+        <button type="submit" style="padding:6px 12px; background-color:#f44336; color:white; border:none; border-radius:6px; cursor:pointer;">Cerrar sesión</button>
+    </form>
+
+        <form method="POST" style="margin-bottom:20px;">
+            <label for="banco">Seleccionar banco:</label>
+            <select name="banco" onchange="this.form.submit()">
+                {% for banco in bancos %}
+                <option value="{{ banco }}" {% if banco == banco_seleccionado %}selected{% endif %}>{{ banco }}</option>
+                {% endfor %}
+            </select>
+        
+        <label for="cliente">Seleccionar cliente:</label>
+        <select name="cliente" onchange="this.form.submit()">
+            <option value="Todos">Todos</option>
+            {% for cliente in clientes %}
+            <option value="{{ cliente }}" {% if cliente == cliente_seleccionado %}selected{% endif %}>{{ cliente }}</option>
+            {% endfor %}
+        </select>
+    </form>
+
+        <h3>Cliente: {{ cliente_seleccionado }} | Banco: {{ banco_seleccionado }}<br>Total Monto del Servicio: S/. {{ '{:,.2f}'.format(total_monto) }}</h3>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Cliente</th>
+                <th>Banco</th>
+                <th>Comisión</th>
+                <th>Subtotal (S/.)</th>
+                <th>IGV (18%)</th>
+                <th>Total (S/.)</th>
+                <th>Monto del Servicio</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for fila in datos %}
+            <tr>
+                <td>{{ fila['Fecha'].strftime('%d/%m/%Y') }}</td>
+                <td>{{ fila['Cliente'] }}</td>
+                <td>{{ fila['BANCO'] }}</td>
+                <td>{{ fila['COMISION_PORCENTAJE'] }}</td>
+                <td>{{ '{:,.2f}'.format(fila['Subtotal']) }}</td>
+                <td>{{ '{:,.2f}'.format(fila['IGV']) }}</td>
+                <td>{{ '{:,.2f}'.format(fila['Total']) }}</td>
+                <td>{{ '{:,.2f}'.format(fila['MONTO DEL SERVICIO']) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="center">
+        <div class="chart-container">
+            <h4>Monto mensual por servicio (Barras)</h4>
+            <canvas id="barMonthlyChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <h4>Comparación de bancos por mes (Barras)</h4>
+            <canvas id="barChart"></canvas>
+        </div>
+    </div>
+
+    <div class="full-chart">
+        <h4 style="text-align:center;">Monto mensual por servicio (Área - Todos los meses)</h4>
+        <canvas id="areaAllChart"></canvas>
+    </div>
+
+    <script>
+        const areaLabels = {{ monto_mensual.index.tolist() | tojson }};
+        const areaData = {{ monto_mensual['MONTO DEL SERVICIO'].tolist() | tojson }};
+        const barLabels = {{ monto_por_banco.index.tolist() | tojson }};
+        const barData = {{ monto_por_banco.tolist() | tojson }};
+
+        new Chart(document.getElementById("barMonthlyChart"), {
+            type: "bar",
+            data: {
+                labels: areaLabels,
+                datasets: [{
+                    label: "Monto del servicio (S/.)",
+                    data: areaData,
+                    backgroundColor: "teal"
+                }]
+            }
+        });
+
+        new Chart(document.getElementById("barChart"), {
+            type: "bar",
+            data: {
+                labels: barLabels,
+                datasets: [{
+                    label: "Monto del servicio por banco (mes seleccionado)",
+                    data: barData,
+                    backgroundColor: "orange"
+                }]
+            }
+        });
+
+        new Chart(document.getElementById("areaAllChart"), {
+            type: "line",
+            data: {
+                labels: areaLabels,
+                datasets: [{
+                    label: "Monto del servicio mensual (S/.)",
+                    data: areaData,
+                    fill: true,
+                    borderColor: "green",
+                    backgroundColor: "rgba(0,128,0,0.2)",
+                    tension: 0.3
+                }]
+            }
+        });
+    </script>
+</body>
+</html>
