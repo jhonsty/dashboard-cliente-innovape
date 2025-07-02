@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for
 import pandas as pd
+import os
 
 app = Flask(__name__)
 
@@ -8,8 +9,17 @@ def cargar_datos():
     df.columns = [col.strip() for col in df.columns]
 
     df['Fecha'] = pd.to_datetime(df['Fecha'])
-    df['Mes'] = df['Fecha'].dt.month_name(locale='es_ES.utf8')
+    df['Mes'] = df['Fecha'].dt.month_name()
     df['Mes_Num'] = df['Fecha'].dt.month
+
+    # Traducir los nombres de los meses al español manualmente
+    meses_es = {
+        'January': 'Enero', 'February': 'Febrero', 'March': 'Marzo',
+        'April': 'Abril', 'May': 'Mayo', 'June': 'Junio',
+        'July': 'Julio', 'August': 'Agosto', 'September': 'Septiembre',
+        'October': 'Octubre', 'November': 'Noviembre', 'December': 'Diciembre'
+    }
+    df['Mes'] = df['Mes'].map(meses_es)
 
     df['COMISION'] = df['COMISION'].astype(float)
     df['COMISION_PORCENTAJE'] = (df['COMISION'] * 100).round(2).astype(str) + '%'
@@ -49,7 +59,13 @@ def dashboard():
     monto_mensual = df_filtrado.groupby("Mes_Num").agg({
         "MONTO DEL SERVICIO": "sum"
     }).sort_index()
-    monto_mensual.index = pd.to_datetime(monto_mensual.index, format="%m").month_name(locale='es_ES.utf8')
+    monto_mensual.index = pd.to_datetime(monto_mensual.index, format="%m").month_name()
+    monto_mensual.index = monto_mensual.index.map({
+        'January': 'Enero', 'February': 'Febrero', 'March': 'Marzo',
+        'April': 'Abril', 'May': 'Mayo', 'June': 'Junio',
+        'July': 'Julio', 'August': 'Agosto', 'September': 'Septiembre',
+        'October': 'Octubre', 'November': 'Noviembre', 'December': 'Diciembre'
+    })
     monto_mensual = monto_mensual.round(2)
 
     barras_mes = df[df['Fecha'].dt.month == df_filtrado['Fecha'].dt.month.iloc[0]]
@@ -69,8 +85,6 @@ def dashboard():
         monto_mensual=monto_mensual,
         monto_por_banco=monto_por_banco
     )
-
-import os
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
